@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>История выигрышей - IlagTeam</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .back-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            color: #e94560;
+        }
+        
+        .prizes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .prize-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .prize-info {
+            flex: 1;
+        }
+        
+        .prize-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #0fccce;
+        }
+        
+        .prize-date {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        .prize-icon {
+            font-size: 2rem;
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 50px 20px;
+            opacity: 0.7;
+        }
+        
+        .error-message {
+            color: #e94560;
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(233, 69, 96, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="back-button" onclick="window.history.back()">←</button>
+            <h1>История выигрышей</h1>
+        </header>
+        
+        <div class="prizes-list" id="prizes-list">
+            <div class="empty">Загрузка истории...</div>
+        </div>
+        
+        <div id="error-message" class="error-message"></div>
+    </div>
+    
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Получение user_id из параметров URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('user_id');
+        
+        // Элементы интерфейса
+        const prizesList = document.getElementById('prizes-list');
+        const errorElement = document.getElementById('error-message');
+        
+        // Функция для отображения ошибки
+        function showError(message) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        
+        // Функция для скрытия ошибки
+        function hideError() {
+            errorElement.style.display = 'none';
+        }
+        
+        // Загрузка истории призов
+        async function loadPrizeHistory() {
+            try {
+                if (!userId) {
+                    throw new Error('User ID не найден');
+                }
+                
+                const response = await fetch(`/api/prize_history?user_id=${userId}`);
+                if (!response.ok) {
+                    throw new Error('Ошибка при загрузке истории призов');
+                }
+                
+                const prizes = await response.json();
+                
+                if (prizes.length === 0) {
+                    prizesList.innerHTML = '<div class="empty">У вас пока нет выигрышей</div>';
+                    return;
+                }
+                
+                let html = '';
+                prizes.forEach(prize => {
+                    // Форматируем дату
+                    const date = new Date(prize.date);
+                    const formattedDate = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+                    
+                    html += `
+                    <div class="prize-item">
+                        <div class="prize-info">
+                            <div class="prize-name">${prize.prize}</div>
+                            <div class="prize-date">${formattedDate}</div>
+                        </div>
+                        <div class="prize-icon">🎁</div>
+                    </div>
+                    `;
+                });
+                
+                prizesList.innerHTML = html;
+                hideError();
+            } catch (error) {
+                showError(`Ошибка: ${error.message}`);
+                console.error('Ошибка загрузки истории призов:', error);
+                prizesList.innerHTML = '<div class="empty">Ошибка загрузки истории</div>';
+            }
+        }
+        
+        // Инициализация страницы
+        if (userId) {
+            loadPrizeHistory();
+        } else {
+            showError('Ошибка: User ID не найден в параметрах URL');
+        }
+    </script>
+</body>
+</html>

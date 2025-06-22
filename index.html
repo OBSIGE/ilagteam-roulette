@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IlagTeam - Рулетка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #e94560;
+            text-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            transition: transform 0.3s, background 0.3s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #e94560;
+        }
+        
+        .card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #0fccce;
+        }
+        
+        .card p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 30px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #e94560;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .user-data {
+            text-align: left;
+        }
+        
+        .username {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #0fccce;
+        }
+        
+        .roulette-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(15, 204, 206, 0.2);
+            font-size: 0.9rem;
+        }
+        
+        .error-message {
+            color: #e94560;
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(233, 69, 96, 0.1);
+        }
+        
+        @media (max-width: 600px) {
+            .cards {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎰 IlagTeam Рулетка</h1>
+            <p class="subtitle">Испытай удачу и выиграй ценные призы!</p>
+            
+            <div class="user-info">
+                <div class="user-avatar" id="user-avatar">U</div>
+                <div class="user-data">
+                    <div class="username" id="username">Пользователь</div>
+                    <div id="user-id">ID: загрузка...</div>
+                    <div class="roulette-status" id="roulette-status">Проверка статуса рулетки...</div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="cards">
+            <div class="card" onclick="navigate('roulette.html')">
+                <div class="icon">🎡</div>
+                <h2>Крутить рулетку</h2>
+                <p>Испытай свою удачу и выиграй призы</p>
+            </div>
+            
+            <div class="card" onclick="navigate('history.html')">
+                <div class="icon">🏆</div>
+                <h2>История выигрышей</h2>
+                <p>Посмотри свою историю призов</p>
+            </div>
+            
+            <div class="card" onclick="navigate('profile.html')">
+                <div class="icon">👤</div>
+                <h2>Профиль</h2>
+                <p>Твоя статистика и достижения</p>
+            </div>
+        </div>
+        
+        <div id="error-message" class="error-message"></div>
+        
+        <footer>
+            © 2024 IlagTeam | Все права защищены
+        </footer>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+        
+        // Получение user_id из параметров URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('user_id');
+        
+        // Элементы интерфейса
+        const usernameElement = document.getElementById('username');
+        const userIdElement = document.getElementById('user-id');
+        const avatarElement = document.getElementById('user-avatar');
+        const statusElement = document.getElementById('roulette-status');
+        const errorElement = document.getElementById('error-message');
+        
+        // Функция для отображения ошибки
+        function showError(message) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        
+        // Функция для скрытия ошибки
+        function hideError() {
+            errorElement.style.display = 'none';
+        }
+        
+        // Проверка доступности рулетки
+        async function checkRouletteStatus() {
+            try {
+                if (!userId) {
+                    throw new Error('User ID не найден');
+                }
+                
+                const response = await fetch(`/api/can_spin?user_id=${userId}`);
+                if (!response.ok) {
+                    throw new Error('Ошибка при проверке статуса рулетки');
+                }
+                
+                const data = await response.json();
+                
+                if (data.can_spin) {
+                    statusElement.innerHTML = '✅ Рулетка доступна!';
+                    statusElement.style.background = 'rgba(15, 204, 206, 0.2)';
+                } else {
+                    statusElement.innerHTML = `⌛ Следующее вращение доступно через <b>${data.days_until_next}</b> дней`;
+                    statusElement.style.background = 'rgba(233, 69, 96, 0.2)';
+                }
+                
+                hideError();
+            } catch (error) {
+                showError(`Ошибка: ${error.message}`);
+                console.error('Ошибка проверки статуса рулетки:', error);
+            }
+        }
+        
+        // Загрузка данных пользователя
+        async function loadUserData() {
+            try {
+                if (!userId) {
+                    throw new Error('User ID не найден');
+                }
+                
+                const response = await fetch(`/api/user_data?user_id=${userId}`);
+                if (!response.ok) {
+                    throw new Error('Ошибка при загрузке данных пользователя');
+                }
+                
+                const userData = await response.json();
+                
+                usernameElement.textContent = userData.full_name || 'Пользователь';
+                userIdElement.textContent = `ID: ${userId}`;
+                
+                if (userData.username) {
+                    usernameElement.textContent += ` (@${userData.username})`;
+                }
+                
+                // Создаем аватар из инициалов
+                if (userData.full_name) {
+                    const names = userData.full_name.split(' ');
+                    let initials = '';
+                    if (names.length >= 2) {
+                        initials = names[0][0] + names[1][0];
+                    } else if (userData.full_name.length > 0) {
+                        initials = userData.full_name[0];
+                    }
+                    avatarElement.textContent = initials;
+                }
+                
+                hideError();
+            } catch (error) {
+                showError(`Ошибка: ${error.message}`);
+                console.error('Ошибка загрузки данных пользователя:', error);
+            }
+        }
+        
+        function navigate(page) {
+            window.location.href = `${page}?user_id=${userId}`;
+        }
+        
+        // Инициализация страницы
+        if (userId) {
+            loadUserData();
+            checkRouletteStatus();
+        } else {
+            showError('Ошибка: User ID не найден в параметрах URL');
+        }
+    </script>
+</body>
+</html>
