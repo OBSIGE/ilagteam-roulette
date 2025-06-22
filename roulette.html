@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IlagTeam - Рулетка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #e94560;
+            text-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+        }
+        
+        .roulette-container {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            margin: 40px auto;
+            overflow: hidden;
+            border: 3px solid #0fccce;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(15, 204, 206, 0.3);
+        }
+        
+        .roulette-track {
+            display: flex;
+            position: absolute;
+            height: 100%;
+            left: 0;
+            transition: transform 0.1s linear;
+        }
+        
+        .roulette-item {
+            min-width: 200px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        
+        .prize-name {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .prize-probability {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .pointer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 4px;
+            height: 120%;
+            background: #fff;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+        }
+        
+        .pointer::before {
+            content: "▼";
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 30px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-top: 30px;
+        }
+        
+        .spin-button {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
+            margin-bottom: 15px;
+        }
+        
+        .spin-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(233, 69, 96, 0.6);
+        }
+        
+        .spin-button:active {
+            transform: translateY(1px);
+        }
+        
+        .spin-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .result {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            background: rgba(15, 204, 206, 0.2);
+            border-radius: 10px;
+            width: 100%;
+        }
+        
+        .win-animation {
+            animation: winPulse 1s infinite;
+        }
+        
+        @keyframes winPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .spin-info {
+            margin-top: 10px;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .roulette-item {
+                min-width: 180px;
+            }
+            
+            .prize-name {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="window.location.href='index.html'">←</button>
+    
+    <div class="container">
+        <header>
+            <h1>🎰 Игровая Рулетка</h1>
+            <p>Крути рулетку и выигрывай призы!</p>
+        </header>
+        
+        <div class="roulette-container">
+            <div class="roulette-track" id="roulette-track">
+                <!-- Призы будут добавлены динамически -->
+            </div>
+            <div class="pointer"></div>
+        </div>
+        
+        <div class="controls">
+            <button class="spin-button" id="spin-btn">Крутить рулетку</button>
+            <div class="spin-info" id="spin-info">Доступно 1 вращение в неделю</div>
+        </div>
+        
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        const rouletteTrack = document.getElementById('roulette-track');
+        const spinButton = document.getElementById('spin-btn');
+        const result = document.getElementById('result');
+        const spinInfo = document.getElementById('spin-info');
+        
+        // Обновленные призы с новыми вероятностями
+        const prizes = [
+            { name: "20 TON 💰", probability: 0.0000001, color: "#9c27b0" },       // Фиолетовый
+            { name: "3 TON 💰", probability: 0.10, color: "#00bcd4" },            // Голубой
+            { name: "80% на 3 дня 🖼️", probability: 0.10, color: "#4caf50" },    // Зеленый
+            { name: "60% на 3 дня", probability: 0.40, color: "#ffc107" },        // Желтый
+            { name: "75% на 3 дня 😺", probability: 0.25, color: "#e94560" },    // Красный
+            { name: "1 TON 🎁", probability: 0.45, color: "#0fccce" }            // Бирюзовый
+        ];
+        
+        let isSpinning = false;
+        let canSpin = true;
+        let currentPosition = 0;
+        
+        // Создаем элементы рулетки
+        function createRouletteItems() {
+            rouletteTrack.innerHTML = '';
+            
+            // Добавляем дополнительные элементы для плавной анимации
+            for (let i = 0; i < 2; i++) {
+                prizes.forEach(prize => {
+                    const item = document.createElement('div');
+                    item.className = 'roulette-item';
+                    item.style.background = prize.color;
+                    item.innerHTML = `
+                        <div class="prize-name">${prize.name}</div>
+                        <div class="prize-probability">Шанс: ${(prize.probability * 100).toFixed(6)}%</div>
+                    `;
+                    rouletteTrack.appendChild(item);
+                });
+            }
+        }
+        
+        // Проверка доступности вращения
+        async function checkSpinAvailability() {
+            try {
+                // В реальном приложении здесь должен быть запрос к серверу
+                // Для демо-версии используем localStorage
+                const lastSpin = localStorage.getItem('lastSpin');
+                
+                if (lastSpin) {
+                    const lastSpinDate = new Date(parseInt(lastSpin));
+                    const now = new Date();
+                    const diffDays = Math.floor((now - lastSpinDate) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 7) {
+                        canSpin = false;
+                        spinButton.disabled = true;
+                        spinInfo.textContent = `Следующее вращение доступно через ${7 - diffDays} дней`;
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка проверки доступности:', error);
+            }
+        }
+        
+        // Анимация вращения
+        function spinRoulette() {
+            if (isSpinning || !canSpin) return;
+            
+            isSpinning = true;
+            spinButton.disabled = true;
+            result.textContent = "";
+            result.classList.remove('win-animation');
+            
+            // Фиксируем время вращения
+            localStorage.setItem('lastSpin', Date.now().toString());
+            
+            // Выбираем приз на основе вероятностей
+            const random = Math.random();
+            let prizeIndex = 0;
+            let cumulativeProbability = 0;
+            
+            for (let i = 0; i < prizes.length; i++) {
+                cumulativeProbability += prizes[i].probability;
+                if (random <= cumulativeProbability) {
+                    prizeIndex = i;
+                    break;
+                }
+            }
+            
+            const prize = prizes[prizeIndex].name;
+            
+            // Рассчитываем позицию для остановки (с учетом дублированных элементов)
+            const targetPosition = -((prizes.length * 100) + (prizeIndex * 200));
+            
+            // Начальная скорость
+            let speed = 30;
+            let currentPos = currentPosition;
+            
+            // Функция анимации
+            function animate() {
+                currentPos -= speed;
+                rouletteTrack.style.transform = `translateX(${currentPos}px)`;
+                
+                // Замедление
+                if (currentPos < targetPosition) {
+                    speed *= 0.98;
+                    
+                    if (speed < 0.5) {
+                        // Финиш
+                        currentPosition = currentPos;
+                        finishSpin(prize);
+                        return;
+                    }
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+        
+        // Завершение вращения
+        function finishSpin(prize) {
+            result.textContent = `🎉 Поздравляем! Вы выиграли: ${prize}`;
+            result.classList.add('win-animation');
+            
+            // Отправляем результат в бот
+            if (window.Telegram.WebApp.sendData) {
+                window.Telegram.WebApp.sendData(prize);
+            }
+            
+            isSpinning = false;
+            canSpin = false;
+            spinButton.disabled = true;
+            spinInfo.textContent = "Следующее вращение будет доступно через 7 дней";
+        }
+        
+        // Инициализация
+        createRouletteItems();
+        checkSpinAvailability();
+        
+        spinButton.addEventListener('click', spinRoulette);
+    </script>
+</body>
+</html>
